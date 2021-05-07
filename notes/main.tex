@@ -123,6 +123,133 @@ $$\text{(1)}~~H_{t+1}(A_t) = H_t(A_t) + \alpha(R_t - \hat{R_t})(1-\pi_t(A_t))$$
 $$\text{(2)}~~~H_{t+1}(a) = H_t(a) - \alpha(R_t - \hat{R_t})(\pi_t(a)~~~\text{for all $a \neq A_t$}$$
 Here $\alpha > 0$ is the step-size parameter. Notice in (1) that, if the reward is higher, exploitation is incentivized. Notice that (1) is small when $\pi_t$ is high, detracting from exploitation if one action is clearly better than all the others. In (2), the more an action is not selected, the less it will be selected in the future, as the $\pi_t(a)$ term denotes.
 
+\chapter{Finite Markov Decision Processes}
 
+\section{Agent-Environment Interface}
+At a time step $t$, the agent receives $S_t$ and selects  $A_t$. At time step  $t+1$, the agenct receives  $R_{t+1}$ and  $S_{t+1}$. This continuation for an indefinite number of time steps is called a trajectory.
+ \[
+S_0, A_0, R_1, S_2, A_1, R_2, S_2, A_2, \cdots
+.\] 
+
+A finite MDP has finite sets $\mathcal{S}, \mathcal{A}, \mathcal{R}$ for the possible states, actions, and rewards respectively. For a finite MDP, the reward and state distributions are discrete, dependent only on the preceding state and action.
+\[
+  p(s', r \mid s, a) = Pr\{S_t=s, R_t=r \mid S_{t-1}=s, A_{t-1}=a\}
+.\] 
+This is just notational expansion. $p$ defines the \textit{dynamics} of the MDP.
+
+A state-transition probability is
+\[
+  p(s' \mid s, a) = Pr\{S_t=s \mid S_{t-1}=s, A_{t-1}=a\}
+.\] 
+\[
+  = \sum_{r\in\mathcal{R}} p(s', r \mid s, a)
+.\] 
+The expected reward for a state-action pair could be
+\[
+r(s,a) = \E[R_t \mid S_{t-1}=S, A_{t-1}=A] \\
+= \sum_{r\in\mathcal{R}}r\sum_{s\in\mathcal{S}}p(s',r \mid s,a)
+.\]
+which if you notice is just the definition of an expected value from a marginal probability distribution (given certain parameters, of course).
+
+The expected rewards of a state-action-state triplet is
+\[
+  r(s,a,s') = \E[R_t \mid S_{t-1}=s, A_{t-1}=a, S_t=s'] \\
+  \sum_{r\in\mathcal{R}} r\frac{p(s',r \mid s,a)}{p(s' \mid s,a)}
+.\]
+This is the probability of a reward $r$ given that a state $s'$ arises from performing action $a$ in state $s$ (remember that all of these variables are likely stochastic at some level).
+
+\section{Goals and Rewards}
+Reward signals should strictly be what you wanted achieved, not how you want it achieved (unless your method is provably the best, in some game-theoretic sense?).
+
+\section{Returns and Episodes}
+We seek to maximize the expected reward of some function of the reward sequence. If the agent-environment interaction breaks naturally (whatever this means, I think it usually just implies repetition) into sub-sequences, they are called \textit{episodes}.
+
+An epsiode ends in a terminal state $\mathcal{S}^+$, being reset to a sampled starting state. The time of a terminal state is a random variable (presumably dependent on previous $s,a$ pairs?).
+
+If the agent-environment interaction does not break naturally, this is a \textit{continuous} task (i.e. $T = \infty$ for the terminal step). Expected rewards probably have some sort of mechanism to make their infinite sum converge, usually a discounting function with $\gamma \in [0,1]$. If $\gamma = 0$, the agent is \textit{myopic} and cares only for the immediate reward (I'm myopic :( ).
+
+\section{Unified Notation for Episodic and continuing Tasks}
+An episodic task can be considered a continuous task where all states $S_t$ for $t \geq T$ have reward 0 and map back to themselves for all actions.
+
+\section{Policies and Value Functions}
+A policy $\pi$ is a mapping from states to \textit{probabilities} of selecting actions. A value function of a state $s$ under policy $\pi$ is
+\[
+  v_{\pi} = \E_{\pi}[G_t \mid S_t=s] = \E_{\pi}[\sum_{k=0}^{\infty} \gamma R_{t+k+1} \mid S_t=s]
+.\] 
+where $\E_{\pi}$ is the expected value of a random variable given that the agent is following policy $\pi$. Any value function will map terminal states to 0. $v_{\pi}$ is the state-value function for $\pi$. 
+
+An action-value function under policy $\pi$ is slightly different.
+\[
+  v_{\pi}(s,a) = \E_{\pi}[G_t \mid S_t=s, A_t=a] \\
+  = \E_{\pi}[\sum_{n=0}^{\infty} \gamma^k R_{t+k+1} \mid S_t=s, A_t=a]
+.\] 
+The key difference is that the action-value function assumes the action $a$ was chosen, which the policy doesn't imply in a state-value function since the policy may be stochastic.
+
+Both $q_{\pi} \text{ and } v_{\pi}$ can be estimated from experience. If an agent follows $\pi$ and maintains an average of the associated rewards for each state (or each action in each state), then repeated sampling can converge on true action-value functions or state-value functions. Such repeated sampling methods are called \textit{Monte Carlo} fmethods. This is impractical for any sufficiently large value of $|\mathcal{S}|$.
+
+If not, the agent maintains $v_{\pi}$ and $q_{\pi}$ as parametrized functions (with fewer parameters than $|\mathcal{S}|$) and adjusts the parameters to approximate expected returns.
+
+Value functions are recursive,
+\begin{equation}
+  \begin{aligned}  
+    v_{\pi} {} & = \E_{\pi}[G_t \mid S_t=s] \\
+             & = \sum_a \pi(a \mid s) \sum_{s',r}p(s',r \mid s,a)[r + \gamma v_{\pi}(s')]
+  \end{aligned}
+\end{equation}
+ 
+This last expression is called the \textit{Bellman Equation} for the state-value function. Notice that it is an expectation over all actions, and also all rewards from all possible new states given an action. The state is supplied to the value function and so is a given to the policy function and joint probability of $s', r$.
+
+The Bellman Equation for the action-value function is given as an exercise in this book, so I may have gotten it wrong.
+\begin{equation}
+  \begin{aligned}  
+    q_{\pi} = \sum_{r,s'} p(s',r \mid s,a) \sum_{a'}\pi(a'\mid s')[r+\gamma q_{\pi}(s',a')
+  \end{aligned}
+\end{equation}
+
+\section{Optimal Policies and Value Functions}
+We can define a partial ordering on policies as $\pi \geq \pi'$ iff $v_{\pi}(s) \geq v_{\pi'}(s)$ for all $s \in \mathcal{S}$
+
+(Why not use a metric on $v_{\pi}$ that weights $v_{\pi}(s)$ by the probability of a state initially occurring? Like this
+\[
+  M_{v_{\pi}} = \sum_{s\in\mathcal{S}} p(S_0=s)v_{\pi}(s)
+.\] 
+and order based on $\pi \geq \pi'$ iff $M_{v_{\pi}} \geq M_{v_{\pi'}}$?)
+
+In any case, the optimal policy $\pi_*$ is the policy with
+\[
+  v_*(s) = \argmax_{\pi}v_{\pi}(s)
+.\] 
+for all $s \in \mathcal{S}$, and similarly the policy with
+\[
+  q_*(s,a) = \argmax_{\pi}q_{\pi}(s,a)
+.\] 
+for all $s \in \mathcal{S}, a \in \mathcal{A}(s)$. Note that $a$ here isn't necessarily the optimal $a$ for $s$; it is a predefined choice. Since $q_{*}(s,a)$ is optimal, though, it is
+\[
+  q_*(s,a) = \E[R_{t+1} + \gamma v_*(S_{t+1}) \mid S_t=s, A_t=a]
+.\] 
+Since $v_{*}$ follows the best action in any specific situation, we do not need to sum over all probabilities of taking an action in a state since we always take the best one. So,
+\begin{equation}
+  \begin{aligned}  
+    v_{*}(s) {}   & = \argmax_{a\in\mathcal{A}(s)} q_{\pi_*}(s,a) \\
+                  & = \argmax_{a\in\mathcal{A}(s)} \E_{\pi_*}[G_t \mid S_t=s, A_t=a] \\
+                  & = \argmax_{a\in\mathcal{A}(s)} \E_{\pi_*}[R_{t+1} + \gamma G_{t+1} \mid S_t=s, A_t=a] \\
+                  & = \argmax_{a\in\mathcal{A}(s)} \sum_{s',r}p(s',r \mid s,a)[r+ \gamma v_*(s')
+ .\end{aligned}
+\end{equation}
+This is the Bellman Optimality Equation for $v_*$. For $q_*$, we have
+\begin{equation}
+  \begin{aligned}
+    q_{\pi}(s,a) {} & = \E[R_{t+1} + \gamma \argmax_{a'}q_*(S_{t+1},a') \mid S_t=s, A_t=a] \\
+                  & = \sum_{s',r} p(s',r \mid s,a)[r + \gamma \argmax_{a'}q_*(s',a')]
+  .\end{aligned}
+\end{equation}
+Here the agent is supplied possibly non-optimal action $a$, but takes the optimal action $a'$ afterward.
+
+The Bellman optimality equations have unique solutions since they are a system of $n$ equations in $n$ variables (unclear). (Is this because we have to find the max $a'$ for each $s'$ in $q$, and find the max $s'$ for each $a'$ in $v$? Unclear on what the difference really is. I guess these two things are very related anyway so this is probably a semantic difference).
+
+The $q_*$ function is nicer than $v_*$. With $v_*$ if you want to find the best action to take in state $s$, you have to take each action $a$ and compute the (expected?) value of the resulting state $v_*(s)$. The best action is the one which maximizes this quantity. For $q_*$, you just run $q_*$ on every action $a \in \mathcal{A}(s)$ and take the one which yields the maximum value.
+
+\section{Optimality and Approximation}
+Optimality is hard and computationally infeasible for practical problems if you want to solve the linear system of equations exactly. Instead, we can use approximate tabular methods (but even those fail after a certain $|\mathcal{S}|$) or function approximation.
 \end{document}
 
