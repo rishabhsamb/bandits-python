@@ -12,8 +12,6 @@ class ucb:
         We randomize the reward distributions' means.
         The n-th reward (for n from 0 to a-1)
         has Gaussian distribution with mean sampled from N(0, 1) and variance 1. 
-
-    Thanks Christian Hubbs for this class model for bandit algorithms.
     '''
     def __init__ (self, a, c, length)
         self.arms = a
